@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as appsync from "aws-cdk-lib/aws-appsync";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as path from 'path';
 
 export class BookStoreGraphqlApiStack extends cdk.Stack {
@@ -22,11 +23,24 @@ export class BookStoreGraphqlApiStack extends cdk.Stack {
       }
     });
 
+    const booksTable = new dynamodb.Table(this, "BooksTable", {
+      partitionKey: {
+        name: "id",
+        type: dynamodb.AttributeType.STRING,
+      },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    });
+
     const listBooksLambda = new lambda.Function(this, "ListBooksHandler", {
       code: lambda.Code.fromAsset("functions"),
       runtime: lambda.Runtime.NODEJS_LATEST,
       handler: "listBooks.handler",
+      environment: {
+        BOOKS_TABLE: booksTable.tableName,
+      },
     });
+
+    booksTable.grantReadData(listBooksLambda);
 
     const listBooksDataSource = api.addLambdaDataSource(
       "listBooksDataSource",
