@@ -20,7 +20,11 @@ export class BookStoreGraphqlApiStack extends cdk.Stack {
             expires: cdk.Expiration.after(cdk.Duration.days(365))
           }
         },
-      }
+      },
+      logConfig: {
+        fieldLogLevel: appsync.FieldLogLevel.ALL,
+      },
+      xrayEnabled: true,
     });
 
     const booksTable = new dynamodb.Table(this, "BooksTable", {
@@ -31,14 +35,19 @@ export class BookStoreGraphqlApiStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
-    const listBooksLambda = new lambda.Function(this, "ListBooksHandler", {
+    const commonLambdaProps: Omit<lambda.FunctionProps, "handler"> = {
       code: lambda.Code.fromAsset("functions"),
       runtime: lambda.Runtime.NODEJS_LATEST,
-      handler: "listBooks.handler",
       memorySize: 1024,
+      architecture: lambda.Architecture.ARM_64,
       environment: {
         BOOKS_TABLE: booksTable.tableName,
       },
+    };
+
+    const listBooksLambda = new lambda.Function(this, "ListBooksHandler", {
+      handler: "listBooks.handler",
+      ...commonLambdaProps,
     });
 
     booksTable.grantReadData(listBooksLambda);
@@ -54,12 +63,8 @@ export class BookStoreGraphqlApiStack extends cdk.Stack {
     });
 
     const createBookLambda = new lambda.Function(this, "CreateBookHandler", {
-      code: lambda.Code.fromAsset("functions"),
-      runtime: lambda.Runtime.NODEJS_LATEST,
       handler: "createBook.handler",
-      environment: {
-        BOOKS_TABLE: booksTable.tableName,
-      },
+      ...commonLambdaProps,
     });
 
     booksTable.grantReadWriteData(createBookLambda);
@@ -75,13 +80,8 @@ export class BookStoreGraphqlApiStack extends cdk.Stack {
     });
 
     const getBookByIdLambda = new lambda.Function(this, "getBookByIdHandler", {
-      code: lambda.Code.fromAsset("functions"),
-      runtime: lambda.Runtime.NODEJS_LATEST,
       handler: "getBookById.handler",
-      memorySize: 1024,
-      environment: {
-        BOOKS_TABLE: booksTable.tableName,
-      },
+      ...commonLambdaProps,
     });
 
     booksTable.grantReadData(getBookByIdLambda);
