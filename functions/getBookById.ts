@@ -7,7 +7,7 @@ const ddbDocClient = DynamoDBDocumentClient.from(
   new DynamoDBClient({})
 );
 
-const wait = (timeoutMS: number) => new Promise((resolve) => setTimeout(resolve, timeoutMS));
+// const wait = (timeoutMS: number) => new Promise((resolve) => setTimeout(resolve, timeoutMS));
 
 export const handler: AppSyncResolverHandler<
   QueryGetBookByIdArgs,
@@ -18,7 +18,7 @@ export const handler: AppSyncResolverHandler<
         throw new Error("BOOKS_TABLE is not defined");
         }
 
-        await wait(2000)
+        // await wait(2000)
     
         const { bookId } = event.arguments;
     
